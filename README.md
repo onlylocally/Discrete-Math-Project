@@ -102,7 +102,7 @@ Optional (for LKH reference):
 elkai
 ```
 
-> **⚠️ Lưu ý:** `elkai` hiện chỉ hỗ trợ **Python ≤ 3.12**. Trên Python 3.13+ package sẽ không build được do xung đột với `scikit-build-core`. Nếu bạn dùng Python 3.13+, hãy tạo một virtual environment với Python 3.12 để chạy LKH, hoặc bỏ qua bước này — chương trình sẽ tự động skip LKH nếu `elkai` không được cài.
+> **Lưu ý:** `elkai` hiện chỉ hỗ trợ **Python ≤ 3.12**. Trên Python 3.13+ package sẽ không build được do xung đột với `scikit-build-core`. Nếu dùng Python 3.13+, hãy tạo một virtual environment với Python 3.12 để chạy LKH, hoặc bỏ qua bước này — chương trình sẽ tự động skip LKH nếu `elkai` không được cài.
 
 ### Install
 
