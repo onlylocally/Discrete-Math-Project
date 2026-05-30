@@ -9,7 +9,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from main_TSP import TSPSolver, OPTIMAL_COST, _to_python_int, _array_module
 
 script_dir = os.path.dirname(os.path.abspath(__file__))
-tsp_file = os.path.join(script_dir, 'pr1002.tsp')
+tsp_file = os.path.join(script_dir, '..', 'Dataset', 'pr1002.tsp')
 
 ROUTE_COLOR = '#2980b9'
 CITY_COLOR = '#e74c3c'

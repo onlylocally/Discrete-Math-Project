@@ -481,100 +481,121 @@ class TSPSolver:
 
 if __name__ == '__main__':
     script_dir = os.path.dirname(os.path.abspath(__file__))
-    tsp_file = os.path.join(script_dir, 'pr1002.tsp')
-    print('=' * 70)
-    print(' ADVANCED TSP OPTIMIZATION (OOP) — pr1002 (Optimal: 259,045)')
-    print('=' * 70)
+    tsp_file = os.path.join(script_dir, '..', 'Dataset', 'pr1002.tsp')
 
-    t0 = time.time()
+    print('Initializing solver...')
     solver = TSPSolver(tsp_file)
-    print(f'\nLoaded {solver.n} cities.')
-    print(f'Distance matrix + init: {time.time() - t0:.2f}s')
-
-    print('\n--- Initialize base tours ---')
-    t0 = time.time()
-    nn_tour = solver.nearest_neighbor_tsp(start=0)
-    nn_cost = solver.calculate_total_cost(nn_tour)
-    print(f'NN: {nn_cost:,} ({time.time() - t0:.2f}s)')
-
-    t0 = time.time()
-    fi_tour = solver.farthest_insertion()
-    fi_cost = solver.calculate_total_cost(fi_tour)
-    print(f'FI: {fi_cost:,} ({time.time() - t0:.2f}s)')
+    print(f'Loaded {solver.n} cities.\n')
 
     results = []
 
-    print('\n' + '=' * 70)
-    print(' EXPERIMENT 1: Or-Opt')
-    print('=' * 70)
+    # 1. Nearest Neighbor
+    print('Running: Nearest Neighbor...')
     t0 = time.time()
-    print('\n[1a] FI + Or-Opt(3)...')
-    fi_oropt_tour, fi_oropt_cost = solver.or_opt_optimized(fi_tour, max_chain=3)
-    fi_oropt_time = time.time() - t0
-    print(f' => Cost: {fi_oropt_cost:,} | Gap: {(fi_oropt_cost / OPTIMAL_COST - 1) * 100:.2f}% | Time: {fi_oropt_time:.2f}s')
-    results.append(('FI + Or-Opt(3)', fi_oropt_cost, fi_oropt_time))
+    nn_tour = solver.nearest_neighbor_tsp(start=0)
+    nn_cost = solver.calculate_total_cost(nn_tour)
+    nn_time = time.time() - t0
+    results.append(('Nearest Neighbor', nn_cost, nn_time))
 
+    # 2. Farthest Insertion
+    print('Running: Farthest Insertion...')
     t0 = time.time()
-    print('\n[1b] NN + 2-Opt First + Or-Opt(3)...')
-    nn_2opt, nn_2opt_c = solver.two_opt_vectorized(nn_tour, strategy='first', verbose=0)
-    nn_oropt_tour, nn_oropt_cost = solver.or_opt_optimized(nn_2opt, max_chain=3)
-    nn_oropt_time = time.time() - t0
-    print(f' => Cost: {nn_oropt_cost:,} | Gap: {(nn_oropt_cost / OPTIMAL_COST - 1) * 100:.2f}% | Time: {nn_oropt_time:.2f}s')
-    results.append(('NN + 2-Opt + Or-Opt(3)', nn_oropt_cost, nn_oropt_time))
+    fi_tour = solver.farthest_insertion()
+    fi_cost = solver.calculate_total_cost(fi_tour)
+    fi_time = time.time() - t0
+    results.append(('Farthest Insertion', fi_cost, fi_time))
 
-    print('\n' + '=' * 70)
-    print(' EXPERIMENT 6: ILS Chained — 2-Opt Or-Opt 3-Opt (10 min)')
-    print('=' * 70)
+    # 3. NN + 2-Opt (First Imp)
+    print('Running: NN + 2-Opt (First Imp)...')
     t0 = time.time()
-    ils_chain_tour, ils_chain_cost = solver.ils_chained(time_limit=600, init_tour=fi_tour)
-    ils_chain_time = time.time() - t0
-    results.append(('ILS-Chained (10min)', ils_chain_cost, ils_chain_time))
+    nn_2opt_first_tour, nn_2opt_first_cost = solver.two_opt_vectorized(nn_tour, strategy='first', verbose=0)
+    nn_2opt_first_time = time.time() - t0
+    results.append(('NN + 2-Opt (First Imp)', nn_2opt_first_cost, nn_2opt_first_time))
 
-    print('\n' + '=' * 70)
-    print(' EXPERIMENT 7: ILS Chained from NN (10 min)')
-    print('=' * 70)
+    # 4. NN + 2-Opt (Best Imp)
+    print('Running: NN + 2-Opt (Best Imp)...')
     t0 = time.time()
-    ils_nn_tour, ils_nn_cost = solver.ils_chained(time_limit=600, init_tour=nn_tour)
-    ils_nn_time = time.time() - t0
-    results.append(('ILS-Chained from NN (10min)', ils_nn_cost, ils_nn_time))
+    nn_2opt_best_tour, nn_2opt_best_cost = solver.two_opt_vectorized(nn_tour, strategy='best', verbose=0)
+    nn_2opt_best_time = time.time() - t0
+    results.append(('NN + 2-Opt (Best Imp)', nn_2opt_best_cost, nn_2opt_best_time))
 
-    print('\n' + '=' * 70)
-    print('  RESULTS SUMMARY')
-    print('=' * 70)
-    all_results = [
-        ('Nearest Neighbor (baseline)', nn_cost, 0.05),
-        ('Farthest Insertion (baseline)', fi_cost, 0.05),
-        ('NN + 3-Opt Best (previous best)', 270823, 1210)
-    ] + results
-    all_results.sort(key=lambda x: x[1])
-    print(f"\n{'Hang':<5} {'Cau hinh':<40} {'Cost':>10} {'Gap':>8} {'Time':>10}")
-    print('-' * 78)
-    for rank, (name, cost, t) in enumerate(all_results, 1):
-        gap = (cost / OPTIMAL_COST - 1) * 100
-        if t < 1:
-            time_str = f'{t * 1000:.0f}ms'
-        elif t < 60:
-            time_str = f'{t:.1f}s'
-        else:
-            time_str = f'{t / 60:.1f}min'
-        marker = ' ' if cost <= 260000 else ''
-        print(f'{rank:<5} {name:<40} {cost:>10,} {gap:>7.2f}% {time_str:>10}{marker}')
-    print(f'\n Optimal: {OPTIMAL_COST:,}')
-    print(f' Best found: {all_results[0][1]:,} (Gap: {(all_results[0][1] / OPTIMAL_COST - 1) * 100:.2f}%)')
-    print('=' * 70)
-    print('\n' + '=' * 70)
+    # 5. FI + 2-Opt (First Imp)
+    print('Running: FI + 2-Opt (First Imp)...')
+    t0 = time.time()
+    fi_2opt_first_tour, fi_2opt_first_cost = solver.two_opt_vectorized(fi_tour, strategy='first', verbose=0)
+    fi_2opt_first_time = time.time() - t0
+    results.append(('FI + 2-Opt (First Imp)', fi_2opt_first_cost, fi_2opt_first_time))
 
-# LKH
+    # 6. FI + 2-Opt (Best Imp)
+    print('Running: FI + 2-Opt (Best Imp)...')
+    t0 = time.time()
+    fi_2opt_best_tour, fi_2opt_best_cost = solver.two_opt_vectorized(fi_tour, strategy='best', verbose=0)
+    fi_2opt_best_time = time.time() - t0
+    results.append(('FI + 2-Opt (Best Imp)', fi_2opt_best_cost, fi_2opt_best_time))
 
-    print(' EXPERIMENT 8: LKH (elkai)')
-    print('=' * 70)
+    # 7. NN + 3-Opt (First Imp)
+    print('Running: NN + 3-Opt (First Imp)...')
+    t0 = time.time()
+    nn_3opt_first_tour, nn_3opt_first_cost = solver.three_opt_optimized(nn_tour, strategy='first', verbose=0)
+    nn_3opt_first_time = time.time() - t0
+    results.append(('NN + 3-Opt (First Imp)', nn_3opt_first_cost, nn_3opt_first_time))
+
+    # 8. NN + 3-Opt (Best Imp)
+    print('Running: NN + 3-Opt (Best Imp)...')
+    t0 = time.time()
+    nn_3opt_best_tour, nn_3opt_best_cost = solver.three_opt_optimized(nn_tour, strategy='best', verbose=0)
+    nn_3opt_best_time = time.time() - t0
+    results.append(('NN + 3-Opt (Best Imp)', nn_3opt_best_cost, nn_3opt_best_time))
+
+    # 9. FI + 3-Opt (First Imp)
+    print('Running: FI + 3-Opt (First Imp)...')
+    t0 = time.time()
+    fi_3opt_first_tour, fi_3opt_first_cost = solver.three_opt_optimized(fi_tour, strategy='first', verbose=0)
+    fi_3opt_first_time = time.time() - t0
+    results.append(('FI + 3-Opt (First Imp)', fi_3opt_first_cost, fi_3opt_first_time))
+
+    # 10. FI + 3-Opt (Best Imp)
+    print('Running: FI + 3-Opt (Best Imp)...')
+    t0 = time.time()
+    fi_3opt_best_tour, fi_3opt_best_cost = solver.three_opt_optimized(fi_tour, strategy='best', verbose=0)
+    fi_3opt_best_time = time.time() - t0
+    results.append(('FI + 3-Opt (Best Imp)', fi_3opt_best_cost, fi_3opt_best_time))
+
+    # 11. FI + ILS-Chained (10 min)
+    print('Running: FI + ILS-Chained (10 min)...')
+    t0 = time.time()
+    fi_ils_tour, fi_ils_cost = solver.ils_chained(time_limit=600, init_tour=fi_tour)
+    fi_ils_time = time.time() - t0
+    results.append(('FI + ILS-Chained', fi_ils_cost, fi_ils_time))
+
+    # 12. NN + ILS-Chained (10 min)
+    print('Running: NN + ILS-Chained (10 min)...')
+    t0 = time.time()
+    nn_ils_tour, nn_ils_cost = solver.ils_chained(time_limit=600, init_tour=nn_tour)
+    nn_ils_time = time.time() - t0
+    results.append(('NN + ILS-Chained', nn_ils_cost, nn_ils_time))
+
+    # 13. LKH (elkai)
     try:
         import elkai
-        print('\nRunning LKH...')
-        t0_lkh = time.time()
+        print('Running: LKH (elkai)...')
+        t0 = time.time()
         lkh_tour = elkai.solve_int_matrix(solver.D.tolist())
-        lkh_time = time.time() - t0_lkh
+        lkh_time = time.time() - t0
         lkh_cost = solver.calculate_total_cost(lkh_tour)
-        print(f' => Cost: {lkh_cost:,} | Gap: {(lkh_cost / OPTIMAL_COST - 1) * 100:.2f}% | Time: {lkh_time:.2f}s')
+        results.append(('LKH (elkai)', lkh_cost, lkh_time))
     except ImportError:
-        print('error LKH.')
+        print('LKH (elkai) not installed, skipping.')
+
+    # RESULTS TABLE
+    results.sort(key=lambda x: x[1])
+    print('\n')
+    print(f"{'Method':<30} {'Total Cost':>12} {'Inference Time (ms)':>22} {'Gap (%)':>10}")
+    print('-' * 78)
+    for name, cost, t in results:
+        gap = (cost / OPTIMAL_COST - 1) * 100
+        time_ms = int(round(t * 1000))
+        print(f'{name:<30} {cost:>12,} {time_ms:>22,} {gap:>10.3f}')
+    print('-' * 78)
+    print(f"{'Optimal':.<30} {OPTIMAL_COST:>12,}")
+    print()
